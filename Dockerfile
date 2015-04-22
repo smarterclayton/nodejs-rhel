@@ -1,4 +1,6 @@
-FROM rhel7
+FROM rhel7 #prometheus.usersys.redhat.com:5000/dorg-dockerprod-sat6-client:latest
+
+RUN subscription-manager register --org="DOrg" --activationkey="zookey"; subscription-manager refresh
 
 # This is the list of basic dependencies that all language Docker image can
 # consume.
@@ -49,8 +51,8 @@ ENV PATH              /opt/openshift/src/bin:/opt/openshift/bin:/usr/local/sti:/
 # TODO: Use better UID and GID values
 RUN mkdir -p ${HOME} && \
     groupadd -r default -f -g 1001 && \
-    useradd -u 1001 -runtime -g default -d ${HOME} -s /sbin/nologin \
-    -c "Default Application Useer" default
+    useradd -u 1001 -r -g default -d ${HOME} -s /sbin/nologin \
+        -c "Default Application User" default
 
 # Directory with the sources is set as the working directory so all STI scripts
 # can execute relative to this path
@@ -60,17 +62,14 @@ WORKDIR ${HOME}
 # is used as the base for another build.
 #
 # Copy the STI scripts from the specific language image to /usr/local/sti
-ONBUILD COPY ./.sti/bin/ /usr/local/sti
+COPY ./.sti/bin/ /usr/local/sti
 
 # Each language image must have 'contrib' directory with extra files needed to
 # run and build the applications.
-ONBUILD COPY ./contrib/ /opt/openshift
-ONBUILD RUN chown -R default:default /opt/openshift
+COPY ./contrib/ /opt/openshift
+RUN chown -R default:default /opt/openshift
 
-# Set the default CMD to print the usage of the language image
-ONBUILD CMD ["usage"]
-
-CMD ["base-usage"]
+CMD ["usage"]
 
 ENV NODEJS_VERSION        0.10
 ENV IMAGE_DESCRIPTION     Node.js 0.10
